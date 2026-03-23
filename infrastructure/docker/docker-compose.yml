@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  crossai-app:
+    build:
+      context: ../..
+      dockerfile: infrastructure/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=development
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/crossai
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpass
+      - SPRING_REDIS_HOST=redis
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./uploads:/app/uploads
+      - ./generated-images:/app/images
+    networks:
+      - crossai-network
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: crossai
+      MYSQL_USER: crossai
+      MYSQL_PASSWORD: crossaipass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - crossai-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - crossai-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  crossai-network:
+    driver: bridge
